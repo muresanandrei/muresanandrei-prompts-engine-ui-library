@@ -129,58 +129,106 @@ export class SemanticAnalyzer {
     };
   }
 
-  /**
-   * Analyze grammatical structure
-   */
-  private analyzeGrammar(tokens: TokenizedResult): GrammarAnalysis {
+ /**
+ * Analyze grammatical structure
+ */
+private analyzeGrammar(tokens: TokenizedResult): GrammarAnalysis {
     const words = tokens.words;
-    const original = tokens.original.toLowerCase();
+  const original = tokens.original.toLowerCase();
 
-    const nouns: string[] = [];
-    const verbs: string[] = [];
-    const adjectives: string[] = [];
-    const numbers: string[] = [];
+  const nouns: string[] = [];
+  const verbs: string[] = [];
+  const adjectives: string[] = [];
+  const numbers: string[] = [];
 
-    for (const word of words) {
-      const lower = word.toLowerCase();
+  // Stop words - never treat as components
+  const stopWords = new Set([
+    'a', 'an', 'the', 'to', 'of', 'for', 'and', 'or', 
+    'is', 'are', 'it', 'this', 'that', 'with', 'in', 
+    'on', 'at', 'by', 'from', 'as', 'into', 'like'
+  ]);
 
-      // Check if it's a number
-      if (this.isNumber(lower)) {
-        numbers.push(lower);
+  for (const word of words) {
+    const lower = word.toLowerCase();
+
+    // 1. Skip stop words entirely
+    if (stopWords.has(lower)) {
+      continue;
+    }
+
+    // 2. Check if it's a number
+    if (this.isNumber(lower)) {
+      numbers.push(lower);
+      continue;
+    }
+
+    // 3. Check if it's a verb - BEFORE component check
+    if (this.actionVerbs.has(lower) || this.actionVerbs.has(this.getStem(lower))) {
+      verbs.push(lower);
+      continue;
+    }
+
+    // 4. Check if it's a modifier/adjective
+    if (this.isModifier(lower)) {
+      adjectives.push(lower);
+      continue;
+    }
+
+    // 5. Check for EXACT component match
+    const exactMatch = this.knowledge.findComponent(lower);
+    if (exactMatch) {
+      nouns.push(lower);
+      continue;
+    }
+
+    // 6. Check for plural form - convert to singular and try again
+    const singular = this.getSingular(lower);
+    if (singular !== lower) {
+      const singularMatch = this.knowledge.findComponent(singular);
+      if (singularMatch) {
+        nouns.push(singular);
         continue;
-      }
-
-      // Check if it's a verb
-      if (this.actionVerbs.has(lower) || this.actionVerbs.has(this.getStem(lower))) {
-        verbs.push(lower);
-        continue;
-      }
-
-      // Check if it's an adjective/modifier
-      if (this.isModifier(lower)) {
-        adjectives.push(lower);
-        continue;
-      }
-
-      // Check if it's a known component (noun)
-      if (this.knowledge.findComponent(lower) || this.knowledge.fuzzyFindComponent(lower)) {
-        nouns.push(lower);
-        continue;
-      }
-
-      // Default: classify based on position and context
-      // Words after "a/an/the" are likely nouns
-      const pattern = new RegExp(`(?:a|an|the)\\s+${lower}`, 'i');
-      if (pattern.test(original)) {
-        nouns.push(lower);
       }
     }
 
-    // Extract prepositions
-    const prepositions = this.extractPrepositions(original);
+    // 7. Check synonyms
+    const synonym = this.synonymGraph.get(lower);
+    if (synonym && this.knowledge.findComponent(synonym)) {
+      nouns.push(lower);
+      continue;
+    }
 
-    return { nouns, verbs, adjectives, numbers, prepositions };
+    // 8. Last resort: context-based classification
+    const pattern = new RegExp(`(?:a|an|the)\\s+${lower}`, 'i');
+    if (pattern.test(original)) {
+      const fuzzy = this.knowledge.fuzzyFindComponent(lower);
+      if (fuzzy && fuzzy.score > 0.8) {
+        nouns.push(lower);
+      }
+    }
   }
+
+  // Extract prepositions
+  const prepositions = this.extractPrepositions(original);
+
+  return { nouns, verbs, adjectives, numbers, prepositions };
+}
+
+/**
+ * Get singular form of a word
+ */
+private getSingular(word: string): string {
+  if (word.endsWith('ies')) {
+    return word.slice(0, -3) + 'y'; // e.g., "entries" -> "entry"
+  }
+  if (word.endsWith('es')) {
+    return word.slice(0, -2); // e.g., "boxes" -> "box"
+  }
+  if (word.endsWith('s') && !word.endsWith('ss')) {
+    return word.slice(0, -1); // e.g., "buttons" -> "button"
+  }
+  return word;
+}
 
   /**
    * Extract semantic roles (who does what to whom)

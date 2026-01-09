@@ -11,6 +11,8 @@ const rl = readline.createInterface({
   output: process.stdout
 });
 
+let debugMode = false;
+
 async function main() {
   console.log('\n========================================');
   console.log('   PROMPT ENGINE - Interactive Test');
@@ -25,9 +27,10 @@ async function main() {
 
   console.log('COMMANDS:');
   console.log('  Type any prompt to generate JSX');
-  console.log('  "train" - Enter training mode');
-  console.log('  "count" - Show training count');
-  console.log('  "exit"  - Quit\n');
+  console.log('  "debug"  - Toggle debug mode');
+  console.log('  "train"  - Enter training mode');
+  console.log('  "count"  - Show training count');
+  console.log('  "exit"   - Quit\n');
 
   console.log('EXAMPLE PROMPTS:');
   console.log('  create a button');
@@ -73,6 +76,12 @@ async function main() {
       break;
     }
 
+    if (input.toLowerCase() === 'debug') {
+      debugMode = !debugMode;
+      console.log(`\nDebug mode: ${debugMode ? 'ON' : 'OFF'}\n`);
+      continue;
+    }
+
     if (input.toLowerCase() === 'train') {
       await trainMode();
       continue;
@@ -85,6 +94,19 @@ async function main() {
 
     try {
       const result = await engine.process(input);
+
+      if (debugMode) {
+        console.log('\n┌─────────────────────────────────────');
+        console.log('│ DEBUG INFO:');
+        console.log('├─────────────────────────────────────');
+        console.log('│ Tokens:', result.debug.tokens.words);
+        console.log('│ Intent:', result.debug.intent.type, `(${(result.debug.intent.confidence * 100).toFixed(0)}%)`);
+        console.log('│ Entities:');
+        result.debug.entities.forEach(e => {
+          console.log(`│   - ${e.type}: ${JSON.stringify(e.value.name || e.value.text || e.value)} (${(e.confidence * 100).toFixed(0)}%)`);
+        });
+        console.log('├─────────────────────────────────────');
+      }
 
       console.log('\n┌─────────────────────────────────────');
       console.log('│ GENERATED JSX:');

@@ -96,6 +96,7 @@ export class JSXGenerator {
    */
   private generateNested(context: ProcessingContext): GeneratorResult {
     const { container, children } = this.contextHelper.getNestedStructure(context);
+    const quantity = this.contextHelper.getQuantity(context);
 
     if (!container && children.length === 0) {
       return {
@@ -115,17 +116,20 @@ export class JSXGenerator {
       const containerProps = this.buildProps(context, container);
       const propsString = this.propsToString(containerProps);
 
-      // Generate children
-      const childrenJsx = children.map(child => {
+      // Generate children - apply quantity to each child type
+      const childrenJsx = children.flatMap(child => {
         const childName = this.capitalize(child.value.name);
         imports.push(childName);
 
         const childProps = this.buildPropsForChild(child);
         const childPropsStr = this.propsToString(childProps);
 
-        return childPropsStr
+        const childElement = childPropsStr
           ? `    <${childName} ${childPropsStr} />`
           : `    <${childName} />`;
+
+        // Repeat child based on quantity
+        return Array(quantity).fill(childElement);
       }).join('\n');
 
       jsx = propsString
@@ -133,16 +137,19 @@ export class JSXGenerator {
         : `<${containerName}>\n${childrenJsx}\n</${containerName}>`;
     } else {
       // No container, just wrap in fragment
-      const childrenJsx = children.map(child => {
+      const childrenJsx = children.flatMap(child => {
         const childName = this.capitalize(child.value.name);
         imports.push(childName);
 
         const childProps = this.buildPropsForChild(child);
         const childPropsStr = this.propsToString(childProps);
 
-        return childPropsStr
+        const childElement = childPropsStr
           ? `  <${childName} ${childPropsStr} />`
           : `  <${childName} />`;
+
+        // Repeat child based on quantity
+        return Array(quantity).fill(childElement);
       }).join('\n');
 
       jsx = `<>\n${childrenJsx}\n</>`;
@@ -162,29 +169,28 @@ export class JSXGenerator {
     const components = context.entities.filter(e => e.type === 'component');
     const quantity = this.contextHelper.getQuantity(context);
 
-    // Determine layout type
-    let layoutType = 'flex';
+    // Determine layout type and columns
+    let columns = 2;
     let layoutProps: Record<string, any> = {};
 
     if (layoutEntity) {
       const layoutValue = layoutEntity.value;
       
+      // Extract column count from various sources
+      if (layoutValue.columns) {
+        columns = layoutValue.columns;
+      } else if (typeof layoutValue.type === 'string') {
+        const numMatch = layoutValue.type.match(/(\d+)/);
+        if (numMatch) {
+          columns = parseInt(numMatch[1]);
+        }
+      }
+
       if (layoutValue.type === 'grid' || layoutValue.columns) {
-        layoutType = 'grid';
         layoutProps = {
           style: {
             display: 'grid',
-            gridTemplateColumns: `repeat(${layoutValue.columns || 2}, 1fr)`,
-            gap: '1rem'
-          }
-        };
-      } else if (layoutValue.type === 'columns') {
-        layoutType = 'grid';
-        const cols = parseInt(layoutValue.type) || 2;
-        layoutProps = {
-          style: {
-            display: 'grid',
-            gridTemplateColumns: `repeat(${cols}, 1fr)`,
+            gridTemplateColumns: `repeat(${columns}, 1fr)`,
             gap: '1rem'
           }
         };
@@ -205,6 +211,18 @@ export class JSXGenerator {
           }
         };
       }
+    } else {
+      // Default grid based on quantity
+      if (quantity > 1) {
+        columns = Math.min(quantity, 4);
+      }
+      layoutProps = {
+        style: {
+          display: 'grid',
+          gridTemplateColumns: `repeat(${columns}, 1fr)`,
+          gap: '1rem'
+        }
+      };
     }
 
     // Generate children
@@ -212,11 +230,13 @@ export class JSXGenerator {
     let childrenJsx: string;
 
     if (components.length > 0) {
-      childrenJsx = components.map(comp => {
+      // Repeat components based on quantity
+      const childElements = components.flatMap(comp => {
         const name = this.capitalize(comp.value.name);
         imports.push(name);
-        return `    <${name} />`;
-      }).join('\n');
+        return Array(quantity).fill(`    <${name} />`);
+      });
+      childrenJsx = childElements.join('\n');
     } else if (quantity > 1) {
       // Generate placeholder children
       childrenJsx = Array(quantity)

@@ -132,7 +132,16 @@ export class EntityExtractor {
       }
     });
 
-    return entities;
+    // Final deduplication by name
+    const seen = new Set<string>();
+    return entities.filter(e => {
+      const name = e.value.name;
+      if (seen.has(name)) {
+        return false;
+      }
+      seen.add(name);
+      return true;
+    });
   }
 
   /**
