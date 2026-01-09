@@ -404,30 +404,32 @@ export class IntentResolver {
    * Save training state
    */
   private async saveTraining(): Promise<void> {
-    try {
-      if (typeof localStorage !== 'undefined') {
-        localStorage.setItem(this.storageKey, this.classifier.toJSON());
-      }
-    } catch (error) {
-      console.warn('Could not save training data:', error);
-    }
+      // No-op: Engine handles persistence via TrainingStore
+    // try {
+    //   if (typeof localStorage !== 'undefined') {
+    //     localStorage.setItem(this.storageKey, this.classifier.toJSON());
+    //   }
+    // } catch (error) {
+    //   console.warn('Could not save training data:', error);
+    // }
   }
 
   /**
    * Load saved training
    */
   private async loadSavedTraining(): Promise<void> {
-    try {
-      if (typeof localStorage !== 'undefined') {
-        const saved = localStorage.getItem(this.storageKey);
-        if (saved) {
-          // We could merge here, but for simplicity we just note it exists
-          console.log('Found saved training data');
-        }
-      }
-    } catch (error) {
-      console.warn('Could not load saved training:', error);
-    }
+      // No-op: Engine handles persistence via TrainingStore
+    // try {
+    //   if (typeof localStorage !== 'undefined') {
+    //     const saved = localStorage.getItem(this.storageKey);
+    //     if (saved) {
+    //       // We could merge here, but for simplicity we just note it exists
+    //       console.log('Found saved training data');
+    //     }
+    //   }
+    // } catch (error) {
+    //   console.warn('Could not load saved training:', error);
+    // }
   }
 
   /**

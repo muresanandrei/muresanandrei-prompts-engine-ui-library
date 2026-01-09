@@ -8,10 +8,12 @@ import { TrainingData, TrainingExample } from '../types';
 export class TrainingStore {
   private filePath: string;
   private data: TrainingData;
+  private index!: Map<string, TrainingExample>;
 
   constructor(filePath: string = './training-data.json') {
     this.filePath = filePath;
     this.data = this.load();
+    this.buildIndex();
   }
 
   private load(): TrainingData {
@@ -31,6 +33,14 @@ export class TrainingStore {
     };
   }
 
+  private buildIndex(): void {
+    this.index = new Map();
+    for (const example of this.data.examples) {
+      const key = example.prompt.toLowerCase().trim();
+      this.index.set(key, example);
+    }
+  }
+
   save(): void {
     try {
       this.data.lastUpdated = Date.now();
@@ -42,7 +52,12 @@ export class TrainingStore {
 
   addExample(example: TrainingExample): void {
     this.data.examples.push(example);
+    this.index.set(example.prompt.toLowerCase().trim(), example);
     this.save();
+  }
+
+  findMatch(prompt: string): TrainingExample | null {
+    return this.index.get(prompt.toLowerCase().trim()) || null;
   }
 
   getExamples(): TrainingExample[] {
@@ -55,6 +70,7 @@ export class TrainingStore {
 
   clear(): void {
     this.data.examples = [];
+    this.index.clear();
     this.save();
   }
 

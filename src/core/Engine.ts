@@ -123,16 +123,21 @@ export class PromptEngine extends EventEmitter<EngineEvents> {
   /**
    * Load saved training data from file
    */
-  private async loadSavedTraining(): Promise<void> {
-    const examples = this.trainingStore.getExamples();
-    
-    for (const example of examples) {
-      if (example.expectedOutput) {
-        const inferredIntent = this.inferIntentFromOutput(example.expectedOutput);
-        await this.intent.addTrainingExample(example.prompt, inferredIntent);
-      }
+private async loadSavedTraining(): Promise<void> {
+  const examples = this.trainingStore.getExamples();
+  console.log(`[TrainingStore] Found ${examples.length} saved examples`);
+  for (const example of examples) {
+     console.log(`[TrainingStore] Loading: "${example.prompt}"`);
+    if (example.expectedOutput) {
+      const inferredIntent = this.inferIntentFromOutput(example.expectedOutput);
+      await this.intent.addTrainingExample(example.prompt, inferredIntent);
     }
   }
+  
+  if (this.config.debug) {
+    console.log(`Loaded ${examples.length} training examples from file`);
+  }
+}
 
   /**
    * Process a prompt and generate components
@@ -143,6 +148,25 @@ export class PromptEngine extends EventEmitter<EngineEvents> {
     }
 
     const startTime = Date.now();
+
+
+    // CHECK TRAINED EXAMPLES FIRST
+    const trainedMatch = this.findTrainedMatch(prompt);
+    if (trainedMatch && trainedMatch.expectedOutput) {
+      return {
+        ...trainedMatch.expectedOutput,
+        confidence: 1.0,
+        processingTime: Date.now() - startTime,
+        debug: {
+          tokens: { original: prompt, words: prompt.split(' '), phrases: [], normalized: [] },
+          semantics: {} as any,
+          intent: { type: 'create_component', confidence: 1, subtype: null, alternatives: [] },
+          entities: [],
+          context: {} as any,
+          source: "trained"
+        }
+      };
+    }
 
     try {
       // Step 1: Tokenize
@@ -210,6 +234,14 @@ export class PromptEngine extends EventEmitter<EngineEvents> {
       throw error;
     }
   }
+
+
+  /**
+ * Find a matching trained example
+ */
+private findTrainedMatch(prompt: string): TrainingExample | null {
+   return this.trainingStore.findMatch(prompt);
+}
 
   /**
    * Calculate overall confidence score

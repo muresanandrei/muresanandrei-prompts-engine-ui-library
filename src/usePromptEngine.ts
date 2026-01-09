@@ -2,7 +2,7 @@
 // USE PROMPT ENGINE - React Hook
 // ============================================================
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { PromptEngine } from './core/Engine';
 import {
   UIKitSchema,

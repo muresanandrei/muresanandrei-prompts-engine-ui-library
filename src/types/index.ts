@@ -189,6 +189,7 @@ export interface EngineResult extends GeneratorResult {
     intent: Intent;
     entities: ExtractedEntity[];
     context: ProcessingContext;
+    source?: string;
   };
 }
 

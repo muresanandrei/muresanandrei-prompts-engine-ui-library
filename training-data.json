@@ -1,0 +1,24 @@
+{
+  "examples": [
+    {
+      "prompt": "create a CTA",
+      "correction": "CTA means call-to-action primary button",
+      "expectedOutput": {
+        "jsx": "<Button variant=\"primary\">Get Started</Button>",
+        "imports": []
+      },
+      "timestamp": 1767980057123
+    },
+    {
+      "prompt": "create a cta",
+      "correction": "\"CTA means primary button\"",
+      "expectedOutput": {
+        "jsx": "\"<Button variant=\"primary\" />\"",
+        "imports": []
+      },
+      "timestamp": 1767980231185
+    }
+  ],
+  "version": "1.0.0",
+  "lastUpdated": 1767980231185
+}
