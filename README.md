@@ -1,3 +1,8 @@
+*********************
+
+STILL IN WORKS
+************************
+
 # Prompt Engine
 
 A custom, trainable natural language processing engine that converts text prompts into React components. Built specifically for UI kits without requiring external AI APIs.
@@ -15,6 +20,25 @@ A custom, trainable natural language processing engine that converts text prompt
 
 ```bash
 npm install
+```
+
+# TO TEST RUN 
+
+npx tsx examples/test.ts you will following options:
+
+```
+COMMANDS:
+  Type any prompt to generate JSX
+  "train" - Enter training mode
+  "count" - Show training count
+  "exit"  - Quit
+
+EXAMPLE PROMPTS:
+  create a button
+  large primary button
+  danger button with icon
+  card with title
+  two column layout
 ```
 
 ## Quick Start

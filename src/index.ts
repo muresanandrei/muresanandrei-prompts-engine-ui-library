@@ -9,6 +9,7 @@ export { SemanticAnalyzer } from './core/SemanticAnalyzer';
 export { IntentResolver } from './core/IntentResolver';
 export { EntityExtractor } from './core/EntityExtractor';
 export { ContextBuilder } from './core/ContextBuilder';
+export { TrainingStore } from './core/TrainingStore';
 
 // Knowledge exports
 export { ComponentGraph } from './knowledge/ComponentGraph';

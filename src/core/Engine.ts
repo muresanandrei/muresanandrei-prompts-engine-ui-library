@@ -17,6 +17,7 @@ import { SemanticAnalyzer } from './SemanticAnalyzer';
 import { IntentResolver } from './IntentResolver';
 import { EntityExtractor } from './EntityExtractor';
 import { ContextBuilder } from './ContextBuilder';
+import { TrainingStore } from './TrainingStore';
 import { ComponentGraph } from '../knowledge/ComponentGraph';
 import { JSXGenerator } from '../generators/JSXGenerator';
 import { PluginManager } from '../plugins/PluginManager';
@@ -50,9 +51,11 @@ export class PromptEngine extends EventEmitter<EngineEvents> {
   // Plugin system
   public plugins: PluginManager;
   
+  // Training storage
+  private trainingStore: TrainingStore;
+  
   // State
   private initialized: boolean = false;
-  private trainingExamples: TrainingExample[] = [];
 
   constructor(config: EngineConfig = {}) {
     super();
@@ -73,6 +76,9 @@ export class PromptEngine extends EventEmitter<EngineEvents> {
     
     // Initialize plugin system
     this.plugins = new PluginManager();
+    
+    // Initialize training store
+    this.trainingStore = new TrainingStore('./training-data.json');
   }
 
   /**
@@ -98,15 +104,33 @@ export class PromptEngine extends EventEmitter<EngineEvents> {
       // Add custom phrases from schema
       this.addCustomPhrases(schema);
 
+      // Load saved training data
+      await this.loadSavedTraining();
+
       this.initialized = true;
       this.emit('ready');
 
       if (this.config.debug) {
         console.log('PromptEngine initialized with schema:', schema.name);
+        console.log('Loaded training examples:', this.trainingStore.getCount());
       }
     } catch (error) {
       this.emit('error', error as Error);
       throw error;
+    }
+  }
+
+  /**
+   * Load saved training data from file
+   */
+  private async loadSavedTraining(): Promise<void> {
+    const examples = this.trainingStore.getExamples();
+    
+    for (const example of examples) {
+      if (example.expectedOutput) {
+        const inferredIntent = this.inferIntentFromOutput(example.expectedOutput);
+        await this.intent.addTrainingExample(example.prompt, inferredIntent);
+      }
     }
   }
 
@@ -215,8 +239,8 @@ export class PromptEngine extends EventEmitter<EngineEvents> {
     correction: string,
     expected: GeneratorResult
   ): Promise<void> {
-    // Store training example
-    this.trainingExamples.push({
+    // Store training example to file
+    this.trainingStore.addExample({
       prompt,
       correction,
       expectedOutput: expected,
@@ -243,6 +267,7 @@ export class PromptEngine extends EventEmitter<EngineEvents> {
 
     if (this.config.debug) {
       console.log('Learned from correction:', { prompt, correction });
+      console.log('Total training examples:', this.trainingStore.getCount());
     }
   }
 
@@ -318,7 +343,7 @@ export class PromptEngine extends EventEmitter<EngineEvents> {
    * Export training data
    */
   exportTrainingData(): TrainingExample[] {
-    return [...this.trainingExamples];
+    return this.trainingStore.getExamples();
   }
 
   /**
@@ -340,7 +365,7 @@ export class PromptEngine extends EventEmitter<EngineEvents> {
    * Reset the engine
    */
   async reset(): Promise<void> {
-    this.trainingExamples = [];
+    this.trainingStore.clear();
     await this.intent.reset();
     
     if (this.config.debug) {
@@ -353,6 +378,13 @@ export class PromptEngine extends EventEmitter<EngineEvents> {
    */
   get isReady(): boolean {
     return this.initialized;
+  }
+
+  /**
+   * Get training count
+   */
+  getTrainingCount(): number {
+    return this.trainingStore.getCount();
   }
 }
 
