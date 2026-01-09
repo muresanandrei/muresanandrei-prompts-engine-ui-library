@@ -1,0 +1,55 @@
+{
+  "name": "prompt-engine",
+  "version": "1.0.0",
+  "description": "A custom trainable NLP engine for converting natural language prompts to React components",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "lint": "eslint src --ext .ts,.tsx",
+    "test": "jest",
+    "typecheck": "tsc --noEmit",
+    "example": "ts-node examples/training.ts",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "nlp",
+    "react",
+    "components",
+    "prompt",
+    "ai",
+    "ui-kit",
+    "code-generation",
+    "natural-language"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "eventemitter3": "^5.0.1",
+    "fuse.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/react": "^18.2.0",
+    "react": "^18.2.0",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.0"
+  },
+  "peerDependencies": {
+    "react": ">=17.0.0"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
